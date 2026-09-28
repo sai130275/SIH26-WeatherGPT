@@ -47,6 +47,7 @@ from app.schemas.risk import RiskAnalysis
 from app.schemas.weather import WeatherData
 from app.services.advisory_engine import AdvisoryEngine
 from app.services.condition_detector import ConditionDetector
+from app.services.evidence_engine import EvidenceEngine
 from app.services.impact_engine import ImpactEngine
 from app.services.risk_engine import RiskEngine
 from app.services.weather_processor import WeatherProcessor
@@ -128,6 +129,26 @@ def _build_context_block(tool_results: dict[str, Any]) -> str:
             for c in conds:
                 lines.append(f"  {c.get('type')}: {c.get('severity')} — {c.get('reason', '')}")
             lines.append("")
+
+    if "evidence" in tool_results:
+        ev = tool_results["evidence"]
+        lines.append("=== Evidence & Confidence ===")
+        lines.append(f"Confidence: {ev.get('confidence', 'N/A')}/100")
+        comp = ev.get('completeness_score', 0)
+        fresh = ev.get('freshness_score', 0)
+        cert = ev.get('rule_certainty_score', 0)
+        lines.append(
+            f"  Breakdown: completeness {comp}/40, "
+            f"freshness {fresh}/30, rule certainty {cert}/30"
+        )
+        uncertainties = ev.get('uncertainty', [])
+        if uncertainties:
+            lines.append(f"  Uncertainties: {'; '.join(uncertainties[:3])}")
+        for item in ev.get('evidence', [])[:6]:   # top 6 evidence items
+            lines.append(
+                f"  [{item['source'].upper()}] {item['data']} — {item['reason']}"
+            )
+        lines.append("")
 
     return "\n".join(lines)
 
@@ -350,7 +371,8 @@ class LLMService:
         model: str = "gpt-4o",
         provider: str = "openai",
     ) -> None:
-        self._tools = ChatTools()
+        self._tools           = ChatTools()
+        self._evidence_engine = EvidenceEngine()
         self._mode: ChatMode
 
         if api_key and OPENAI_AVAILABLE:
@@ -440,6 +462,17 @@ class LLMService:
                 conds = self._tools.analyse_conditions(weather_data)
                 if conds:
                     tool_results["conditions"] = conds
+
+        # ------------------------------------------------------------- #
+        # Evidence + confidence (always runs when weather_data present)  #
+        # ------------------------------------------------------------- #
+        if weather_data is not None:
+            evidence_result = self._evidence_engine.generate(
+                weather  = weather_data,
+                risk     = tool_results.get("risk"),
+                advisory = tool_results.get("advisory"),
+            )
+            tool_results["evidence"] = evidence_result.model_dump()
 
         # ------------------------------------------------------------- #
         # Build context block                                             #
