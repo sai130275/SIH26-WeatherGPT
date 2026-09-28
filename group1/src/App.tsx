@@ -7,6 +7,7 @@ import { AlertsPage } from '@/pages/AlertsPage';
 import { AskAIPage } from '@/pages/AskAIPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { MapPage } from '@/pages/MapPage';
 import { supabase } from '@/lib/supabase';
 import { defaultPreferences } from '@/data/mockData';
 import type { PageId, UserPreferences } from '@/types';
@@ -93,12 +94,13 @@ function App() {
 
   if (!isLoggedIn) {
     return (
-      <div className="bg-surface text-on-surface font-body flex flex-col min-h-screen">
-        <main className="flex flex-col relative w-full px-gutter pt-16 pb-24 bg-surface flex-grow">
-          <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />
-        </main>
-        <BottomNav active={currentPage} onNavigate={handleNavigate} />
-      </div>
+      <PreferencesContext.Provider value={{ preferences, setPreferences: handleSetPreferences }}>
+        <div className="bg-surface text-on-surface font-body flex flex-col min-h-screen items-center justify-center">
+          <main className="flex flex-col relative w-full max-w-md px-gutter bg-surface py-8">
+            <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />
+          </main>
+        </div>
+      </PreferencesContext.Provider>
     );
   }
 
@@ -120,8 +122,8 @@ function App() {
         {currentPage === 'dashboard' && (
           <DashboardPage onNavigate={handleNavigate} location={location} onLocationChange={setLocation} />
         )}
-        {currentPage.startsWith('advisory-') && (
-          <AdvisoryPage mode={currentPage.replace('advisory-', '') as any} onNavigate={handleNavigate} />
+        {currentPage.startsWith('map-') && (
+          <MapPage mode={currentPage.replace('map-', '') as any} onNavigate={handleNavigate} location={location} />
         )}
         {currentPage === 'ask-ai' && <AskAIPage />}
         {currentPage === 'alerts' && <AlertsPage location={location} />}

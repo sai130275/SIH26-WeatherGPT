@@ -16,7 +16,7 @@ class OpenMeteoProvider extends WeatherProvider {
           latitude: lat,
           longitude: lon,
           current_weather: true,
-          hourly: 'precipitation_probability,precipitation,relative_humidity_2m,wind_speed_10m,weather_code,cape',
+          hourly: 'precipitation_probability,precipitation,relative_humidity_2m,wind_speed_10m,weather_code,cape,visibility,surface_pressure,uv_index',
           timezone: 'auto'
         },
         timeout: 8000
@@ -43,6 +43,9 @@ class OpenMeteoProvider extends WeatherProvider {
       const precipitation = hourly.precipitation ? hourly.precipitation[currentIndex] || 0 : 0;
       const humidity = hourly.relative_humidity_2m ? hourly.relative_humidity_2m[currentIndex] || 50 : 50;
       const cape = hourly.cape ? hourly.cape[currentIndex] || 0 : 0;
+      const visibility = hourly.visibility ? (hourly.visibility[currentIndex] / 1000) || 10 : 10;
+      const pressure = hourly.surface_pressure ? hourly.surface_pressure[currentIndex] || 1013 : 1013;
+      const uvIndex = hourly.uv_index ? hourly.uv_index[currentIndex] || 0 : 0;
       const weatherCode = current.weathercode || 0;
 
       // Detect thunderstorm/lightning code (codes 95, 96, 99 in WMO code list)
@@ -56,6 +59,9 @@ class OpenMeteoProvider extends WeatherProvider {
         humidity: humidity,
         lightning: lightning,
         cape: cape,
+        visibility: visibility,
+        pressure: pressure,
+        uv_index: uvIndex,
         weather_code: weatherCode,
         weather_condition: this.mapWmoCodeToCondition(weatherCode),
         time: current.time || new Date().toISOString(),

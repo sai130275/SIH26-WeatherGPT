@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { UpcomingPopup } from '@/components/UpcomingPopup';
 import { locations } from '@/data/mockData';
 import type { PageId, UserPreferences } from '@/types';
 
@@ -65,13 +66,16 @@ export function Header({ onNavigate, location, onLocationChange, preferences, se
         </div>
 
         <div className="flex items-center gap-space-xs relative">
-          <button
-            onClick={() => setShowLanguageModal(true)}
-            className="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full cursor-pointer shrink-0"
-            title="Language"
-          >
-            <Icon name="translate" size={20} />
-          </button>
+          {/* Anchored Language Popover replaced by UpcomingPopup */}
+          <UpcomingPopup featureName="Language Selection">
+            <button
+              className="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full cursor-pointer shrink-0"
+              title="Language"
+            >
+              <Icon name="translate" size={20} />
+            </button>
+          </UpcomingPopup>
+          
           <button
             onClick={() => onNavigate('alerts')}
             className="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full relative cursor-pointer shrink-0"
@@ -87,30 +91,6 @@ export function Header({ onNavigate, location, onLocationChange, preferences, se
           >
             <Icon name="person" size={18} />
           </button>
-
-          {/* Anchored Language Popover */}
-          {showLanguageModal && (
-            <>
-              <div className="fixed inset-0 z-40 cursor-default" onClick={() => setShowLanguageModal(false)} />
-              <div className="absolute top-[calc(100%+0.5rem)] right-0 w-48 bg-surface rounded-xl p-2 shadow-xl border border-outline-variant/30 z-50 flex flex-col gap-1 origin-top-right animate-in fade-in zoom-in-95 duration-200">
-                <span className="text-label-sm text-on-surface-variant px-3 py-2 font-medium">Select Language</span>
-                {supportedLanguages.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => {
-                      if (preferences && setPreferences) {
-                        setPreferences({ ...preferences, language: lang.code });
-                      }
-                      setShowLanguageModal(false);
-                    }}
-                    className={`px-3 py-2 rounded-lg text-left text-body-md ${preferences?.language === lang.code ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-surface-variant text-on-surface'}`}
-                  >
-                    {lang.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
         </div>
       </div>
     </header>

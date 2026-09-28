@@ -5,6 +5,7 @@ import { apiClient } from '@/lib/api';
 import type { PageId, HourlyForecast, DayForecast, TelemetryItem } from '@/types';
 import { usePreferences } from '@/context/PreferencesContext';
 import { formatTemp, formatWind, formatPrecip, formatPressure } from '@/utils/units';
+import { UpcomingPopup } from '@/components/UpcomingPopup';
 
 interface DashboardPageProps {
   onNavigate: (page: PageId) => void;
@@ -293,7 +294,7 @@ export function DashboardPage({ onNavigate, location, onLocationChange }: Dashbo
             desc: 'Paddy crop protection & pesticide application advisories for Warangal rural.',
             bgColor: 'bg-secondary/20',
             textColor: 'text-secondary',
-            action: 'advisory-farmers',
+            action: 'map-farmer',
             actionText: 'View Advisory',
           },
           {
@@ -302,7 +303,7 @@ export function DashboardPage({ onNavigate, location, onLocationChange }: Dashbo
             desc: 'Bay of Bengal depression monitoring & inland wind trajectory prediction.',
             bgColor: 'bg-error/20',
             textColor: 'text-error',
-            action: 'advisory-cyclone',
+            action: 'map-cyclone',
             actionText: 'Open Radar',
           },
           {
@@ -311,8 +312,8 @@ export function DashboardPage({ onNavigate, location, onLocationChange }: Dashbo
             desc: 'Decadal temperature anomalies & monsoon progression charts.',
             bgColor: 'bg-primary/20',
             textColor: 'text-primary',
-            action: 'advisory-climate',
-            actionText: 'Explore Stats',
+            action: 'upcoming',
+            actionText: 'Coming Soon',
           },
           {
             icon: 'flight_takeoff',
@@ -320,7 +321,7 @@ export function DashboardPage({ onNavigate, location, onLocationChange }: Dashbo
             desc: 'Ceiling heights, visibility, & crosswind vectors.',
             bgColor: 'bg-secondary-container/30',
             textColor: 'text-secondary',
-            action: 'advisory-aviation',
+            action: 'map-aviation',
             actionText: 'Check Metrics',
           },
           {
@@ -329,28 +330,40 @@ export function DashboardPage({ onNavigate, location, onLocationChange }: Dashbo
             desc: 'Sea state, wave heights, and reservoir water level feeds.',
             bgColor: 'bg-tertiary/20',
             textColor: 'text-tertiary',
-            action: 'advisory-marine',
+            action: 'map-marine',
             actionText: 'Check Metrics',
           },
-        ].map((card) => (
-          <button
-            key={card.title}
-            onClick={() => onNavigate(card.action as PageId)}
-            className="bg-surface-container rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-variant/60 transition-all cursor-pointer text-left"
-          >
-            <div>
-              <div className={`w-10 h-10 rounded-xl ${card.bgColor} flex items-center justify-center ${card.textColor} mb-space-sm`}>
-                <Icon name={card.icon} size={20} />
+        ].map((card) => {
+          const buttonContent = (
+            <button
+              key={card.title}
+              onClick={() => card.action !== 'upcoming' && onNavigate(card.action as PageId)}
+              className="bg-surface-container rounded-xl p-space-md flex flex-col justify-between hover:bg-surface-variant/60 transition-all cursor-pointer text-left h-full"
+            >
+              <div>
+                <div className={`w-10 h-10 rounded-xl ${card.bgColor} flex items-center justify-center ${card.textColor} mb-space-sm`}>
+                  <Icon name={card.icon} size={20} />
+                </div>
+                <h4 className="text-headline-sm text-on-surface">{card.title}</h4>
+                <p className="text-body-sm text-on-surface-variant mt-space-xs">{card.desc}</p>
               </div>
-              <h4 className="text-headline-sm text-on-surface">{card.title}</h4>
-              <p className="text-body-sm text-on-surface-variant mt-space-xs">{card.desc}</p>
+              <div className="flex items-center gap-1 text-secondary text-label-md font-medium mt-space-md">
+                <span>{card.actionText}</span>
+                {card.action !== 'upcoming' && <Icon name="arrow_forward" size={16} />}
+              </div>
+            </button>
+          );
+
+          return card.action === 'upcoming' ? (
+            <UpcomingPopup key={card.title} featureName={card.title} className="block h-full">
+              {buttonContent}
+            </UpcomingPopup>
+          ) : (
+            <div key={card.title} className="block h-full">
+              {buttonContent}
             </div>
-            <div className="flex items-center gap-1 text-secondary text-label-md font-medium mt-space-md">
-              <span>{card.actionText}</span>
-              <Icon name="arrow_forward" size={16} />
-            </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

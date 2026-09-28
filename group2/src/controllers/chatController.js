@@ -39,7 +39,7 @@ const handleChat = async (req, res, next) => {
     };
 
     const response = await axios.post(`${GROUP3_URL}/chat`, payload, {
-      timeout: 15000 // LLM calls might take some time
+      timeout: 60000 // LLM calls might take some time
     });
 
     // STEP 3: Return Structured Response

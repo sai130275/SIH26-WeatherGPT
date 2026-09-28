@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Icon } from '@/components/Icon';
+import { UpcomingPopup } from '@/components/UpcomingPopup';
 import { supabase } from '@/lib/supabase';
 import { usePreferences } from '@/context/PreferencesContext';
 import { formatWind, formatPrecip } from '@/utils/units';
@@ -606,27 +607,30 @@ export function AskAIPage() {
             <>
               <div className="fixed inset-0 z-40 cursor-default" onClick={() => setShowAttachmentMenu(false)} />
               <div className="absolute bottom-[calc(100%+0.5rem)] left-0 w-56 bg-surface rounded-xl p-2 shadow-xl border border-outline-variant/30 z-50 flex flex-col gap-1 origin-bottom-left animate-in fade-in zoom-in-95 duration-200">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-2 rounded-lg text-left text-body-md hover:bg-surface-variant text-on-surface flex items-center gap-2"
-                >
-                  <Icon name="image" size={18} />
-                  Upload Image
-                </button>
-                <button
-                  onClick={() => docInputRef.current?.click()}
-                  className="px-3 py-2 rounded-lg text-left text-body-md hover:bg-surface-variant text-on-surface flex items-center gap-2"
-                >
-                  <Icon name="description" size={18} />
-                  Upload File
-                </button>
-                <div
-                  className="px-3 py-2 rounded-lg text-left text-body-md text-on-surface-variant flex items-center gap-2 opacity-50 cursor-not-allowed"
-                  title="Coming Soon"
-                >
-                  <Icon name="psychology" size={18} />
-                  Image Analysis — Soon
-                </div>
+                <UpcomingPopup featureName="Image Upload">
+                  <button
+                    className="w-full px-3 py-2 rounded-lg text-left text-body-md hover:bg-surface-variant text-on-surface flex items-center gap-2"
+                  >
+                    <Icon name="image" size={18} />
+                    Upload Image
+                  </button>
+                </UpcomingPopup>
+                <UpcomingPopup featureName="Document Upload">
+                  <button
+                    className="w-full px-3 py-2 rounded-lg text-left text-body-md hover:bg-surface-variant text-on-surface flex items-center gap-2"
+                  >
+                    <Icon name="description" size={18} />
+                    Upload File
+                  </button>
+                </UpcomingPopup>
+                <UpcomingPopup featureName="Image Analysis">
+                  <div
+                    className="w-full px-3 py-2 rounded-lg text-left text-body-md hover:bg-surface-variant text-on-surface flex items-center gap-2"
+                  >
+                    <Icon name="psychology" size={18} />
+                    Image Analysis
+                  </div>
+                </UpcomingPopup>
               </div>
             </>
           )}
