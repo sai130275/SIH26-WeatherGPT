@@ -35,6 +35,25 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "gpt-4o"
 
     # ------------------------------------------------------------------ #
+    # Condition Detection Thresholds (Phase 2)                            #
+    #                                                                     #
+    # All values use canonical units (mm, km/h, °C, km).                 #
+    # Override via environment variables when needed.                     #
+    # ------------------------------------------------------------------ #
+
+    # Rainfall threshold above which "heavy rain" is triggered (mm)
+    HEAVY_RAIN_THRESHOLD_MM: float = 50.0
+
+    # Wind speed threshold above which "high wind" is triggered (km/h)
+    HIGH_WIND_THRESHOLD_KMH: float = 60.0
+
+    # Temperature threshold above which "extreme heat" is triggered (°C)
+    EXTREME_HEAT_THRESHOLD_C: float = 40.0
+
+    # Visibility threshold below which "low visibility" is triggered (km)
+    LOW_VISIBILITY_THRESHOLD_KM: float = 1.0
+
+    # ------------------------------------------------------------------ #
     # Pydantic-settings: load from .env, ignore extra keys                #
     # ------------------------------------------------------------------ #
     model_config = SettingsConfigDict(

@@ -16,7 +16,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import health
+from app.api.routes import health, analyze
 from app.core.config import settings
 
 
@@ -56,6 +56,8 @@ def create_app() -> FastAPI:
     # Routers                                                              #
     # ------------------------------------------------------------------ #
     app.include_router(health.router)
+    app.include_router(analyze.router)
+
 
     # ------------------------------------------------------------------ #
     # Global exception handler                                             #
