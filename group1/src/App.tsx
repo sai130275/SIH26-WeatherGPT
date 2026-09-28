@@ -10,7 +10,7 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { supabase } from '@/lib/supabase';
 import { defaultPreferences } from '@/data/mockData';
 import type { PageId, UserPreferences } from '@/types';
-
+import { PreferencesContext } from '@/context/PreferencesContext';
 import { AdvisoryPage } from '@/pages/AdvisoryPage';
 
 function App() {
@@ -105,8 +105,9 @@ function App() {
   const showHeader = currentPage !== 'login';
 
   return (
-    <div className="bg-surface text-on-surface font-body flex flex-col min-h-screen">
-      {showHeader && (
+    <PreferencesContext.Provider value={{ preferences, setPreferences: handleSetPreferences }}>
+      <div className="bg-surface text-on-surface font-body flex flex-col min-h-screen">
+        {showHeader && (
         <Header 
           onNavigate={handleNavigate} 
           location={location} 
@@ -137,7 +138,8 @@ function App() {
         )}
       </main>
       <BottomNav active={currentPage} onNavigate={handleNavigate} />
-    </div>
+      </div>
+    </PreferencesContext.Provider>
   );
 }
 

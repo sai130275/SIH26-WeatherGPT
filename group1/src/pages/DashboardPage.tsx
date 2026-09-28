@@ -3,6 +3,8 @@ import { Icon } from '@/components/Icon';
 import { locations } from '@/data/mockData';
 import { apiClient } from '@/lib/api';
 import type { PageId, HourlyForecast, DayForecast, TelemetryItem } from '@/types';
+import { usePreferences } from '@/context/PreferencesContext';
+import { formatTemp, formatWind, formatPrecip, formatPressure } from '@/utils/units';
 
 interface DashboardPageProps {
   onNavigate: (page: PageId) => void;
@@ -28,6 +30,7 @@ const getWeatherIcon = (code: number): string => {
 };
 
 export function DashboardPage({ onNavigate, location, onLocationChange }: DashboardPageProps) {
+  const { preferences } = usePreferences();
   const [currentWeather, setCurrentWeather] = useState<any>(null);
   const [hourlyData, setHourlyData] = useState<HourlyForecast[]>([]);
   const [dailyData, setDailyData] = useState<DayForecast[]>([]);
@@ -64,10 +67,10 @@ export function DashboardPage({ onNavigate, location, onLocationChange }: Dashbo
 
         setTelemetry([
           { icon: 'humidity_percentage', label: 'Humidity', value: `${current.humidity ?? 0}%`, status: (current.humidity ?? 0) > 75 ? 'High' : 'Normal', statusColor: (current.humidity ?? 0) > 75 ? 'text-error' : 'text-secondary' },
-          { icon: 'air', label: 'Wind', value: `${current.wind_speed ?? 0} km/h`, status: 'Current', statusColor: 'text-secondary' },
+          { icon: 'air', label: 'Wind', value: formatWind(current.wind_speed ?? 0, preferences), status: 'Current', statusColor: 'text-secondary' },
           { icon: 'water_drop', label: 'Rain Prob', value: `${current.rain_probability ?? 0}%`, status: 'Forecast', statusColor: 'text-secondary' },
-          { icon: 'visibility', label: 'Precip', value: `${current.precipitation ?? 0} mm`, status: 'Accumulation', statusColor: 'text-secondary' },
-          { icon: 'compress', label: 'Pressure', value: `${current.pressure ?? 1013} hPa`, status: 'Surface', statusColor: 'text-secondary' },
+          { icon: 'visibility', label: 'Precip', value: formatPrecip(current.precipitation ?? 0, preferences), status: 'Accumulation', statusColor: 'text-secondary' },
+          { icon: 'compress', label: 'Pressure', value: formatPressure(current.pressure ?? 1013, preferences), status: 'Surface', statusColor: 'text-secondary' },
           { icon: 'wb_sunny', label: 'UV Index', value: `${current.uv_index ?? 0}`, status: (current.uv_index ?? 0) > 6 ? 'High' : 'Moderate', statusColor: (current.uv_index ?? 0) > 6 ? 'text-error' : 'text-secondary' },
           { icon: 'visibility', label: 'Visibility', value: `${current.visibility ?? 10} km`, status: (current.visibility ?? 10) < 5 ? 'Low' : 'Clear', statusColor: (current.visibility ?? 10) < 5 ? 'text-error' : 'text-secondary' },
           { icon: 'speed', label: 'CAPE', value: `${current.cape ?? 0} J/kg`, status: 'Convective Energy', statusColor: 'text-tertiary' },
@@ -157,8 +160,8 @@ export function DashboardPage({ onNavigate, location, onLocationChange }: Dashbo
               <span>Live Telemetry • Updated 2m ago</span>
             </div>
             <div className="flex items-baseline gap-space-sm mt-space-xs">
-              <span className="text-headline-xl text-on-surface">{Math.round(currentWeather?.temperature || 0)}°C</span>
-              <span className="text-body-md text-on-surface-variant">Feels like {Math.round((currentWeather?.temperature || 0) + 1)}°C</span>
+              <span className="text-headline-xl text-on-surface">{formatTemp(currentWeather?.temperature || 0, preferences)}</span>
+              <span className="text-body-md text-on-surface-variant">Feels like {formatTemp((currentWeather?.temperature || 0) + 1, preferences)}</span>
             </div>
             <p className="text-body-md text-on-surface font-medium mt-space-xs">
               {currentWeather?.weather_condition || 'Clear sky'}
@@ -207,7 +210,7 @@ export function DashboardPage({ onNavigate, location, onLocationChange }: Dashbo
                 filled={hour.isHighlighted}
                 className={`my-2 ${hour.isHighlighted ? '' : 'text-secondary'}`}
               />
-              <span className="text-mono-data font-bold text-on-surface">{hour.temp}°C</span>
+              <span className="text-mono-data font-bold text-on-surface">{formatTemp(hour.temp, preferences)}</span>
               <span
                 className={`text-label-sm mt-1 ${
                   hour.rainProb >= 80
@@ -241,7 +244,7 @@ export function DashboardPage({ onNavigate, location, onLocationChange }: Dashbo
             <div key={i} className="bg-surface rounded-lg p-space-sm flex items-center justify-between">
               <div className="w-24">
                 <span className="text-body-md font-medium text-on-surface block">{day.day}</span>
-                <span className="text-label-sm text-secondary">High {day.high}° / Low {day.low}°</span>
+                <span className="text-label-sm text-secondary">High {formatTemp(day.high, preferences)} / Low {formatTemp(day.low, preferences)}</span>
               </div>
               <div className="flex-1 mx-space-md">
                 <div className="flex justify-between text-label-sm mb-1 text-on-surface-variant">

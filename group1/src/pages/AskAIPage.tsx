@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Icon } from '@/components/Icon';
 import { supabase } from '@/lib/supabase';
+import { usePreferences } from '@/context/PreferencesContext';
+import { formatWind, formatPrecip } from '@/utils/units';
 
 interface RichAIData {
   confidence: string;
@@ -27,12 +29,12 @@ interface ChatItem {
   isError?: boolean;
 }
 
-const defaultRichData: RichAIData = {
+const getDefaultRichData = (preferences: any): RichAIData => ({
   confidence: '94% Confidence',
   timestamp: 'Warangal • Today, 14:15 IST',
   alertTitle: 'Severe Thunderstorm Alert',
   summary:
-    'Yes, heavy thunderstorms expected between 3 PM and 7 PM with 85% probability. Expect wind gusts up to 45 km/h.',
+    `Yes, heavy thunderstorms expected between 3 PM and 7 PM with 85% probability. Expect wind gusts up to ${formatWind(45, preferences)}.`,
   floodRisk: { level: 'Moderate', percent: 55 },
   lightningRisk: { level: 'High', percent: 85 },
   hourlyRain: [
@@ -44,11 +46,11 @@ const defaultRichData: RichAIData = {
     { hour: '17h', height: 'h-8', type: 'med' },
     { hour: '18h', height: 'h-3', type: 'low' },
   ],
-  peak: '24mm/h',
+  peak: `${formatPrecip(24, preferences)}/h`,
   recommendedAction:
     'Secure loose outdoor items, delay farm spraying immediately, and avoid open water bodies or tall trees until 18:00 IST.',
-  source: 'IMD Doppler Radar + NWP Consensus',
-};
+  source: 'Open-Meteo Consensus',
+});
 
 const initialChat: ChatItem[] = [
   {
@@ -63,6 +65,7 @@ import type { ApiBaseResponse, ChatRequest, ChatResponse } from '@/types/api';
 import { AxiosError } from 'axios';
 
 export function AskAIPage() {
+  const { preferences } = usePreferences();
   const [messages, setMessages] = useState<ChatItem[]>(initialChat);
   const [inputVal, setInputVal] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -81,15 +84,28 @@ export function AskAIPage() {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
+  const stopRecognition = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+        recognitionRef.current.abort();
+      } catch (e) {}
+      
+      // Aggressively remove listeners
+      recognitionRef.current.onstart = null;
+      recognitionRef.current.onresult = null;
+      recognitionRef.current.onerror = null;
+      recognitionRef.current.onend = null;
+      
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  };
+
   // Cleanup microphone on unmount
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.abort();
-        } catch (e) {}
-        recognitionRef.current = null;
-      }
+      stopRecognition();
     };
   }, []);
 
@@ -99,12 +115,9 @@ export function AskAIPage() {
   };
 
   const handleToggleListening = () => {
-    if (isListening && recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-        recognitionRef.current.abort();
-      } catch (e) {}
-      setIsListening(false);
+    // If currently listening or a ref exists, stop and destroy it immediately
+    if (isListening || recognitionRef.current) {
+      stopRecognition();
       return;
     }
 
@@ -114,59 +127,54 @@ export function AskAIPage() {
       return;
     }
 
-    // Lazy instantiate to ensure no background listening
-    if (!recognitionRef.current) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
+    // Always create a fresh instance for a single controlled lifecycle
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
 
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
 
-      recognition.onresult = (event: any) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
 
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          } else {
-            interimTranscript += event.results[i][0].transcript;
-          }
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
         }
-        
-        if (finalTranscript) {
-          setInputVal(prev => (prev ? prev + ' ' + finalTranscript : finalTranscript));
-        }
-      };
+      }
+      
+      if (finalTranscript) {
+        setInputVal(prev => (prev ? prev + ' ' + finalTranscript : finalTranscript));
+      }
+    };
 
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-        if (event.error === 'not-allowed') {
-          showToast('Microphone permission denied.');
-        } else if (event.error === 'no-speech') {
-          showToast('No speech detected. Try again.');
-        }
-        setIsListening(false);
-        if (recognitionRef.current) {
-          try { recognitionRef.current.abort(); } catch(e) {}
-        }
-      };
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error', event.error);
+      if (event.error === 'not-allowed') {
+        showToast('Microphone permission denied.');
+      } else if (event.error === 'no-speech') {
+        showToast('No speech detected. Try again.');
+      }
+      stopRecognition();
+    };
 
-      recognition.onend = () => {
-        setIsListening(false);
-      };
+    recognition.onend = () => {
+      stopRecognition();
+    };
 
-      recognitionRef.current = recognition;
-    }
+    recognitionRef.current = recognition;
 
     try {
-      recognitionRef.current.start();
+      recognition.start();
     } catch (err) {
       console.error('Failed to start recognition', err);
-      setIsListening(false);
+      stopRecognition();
     }
   };
 
@@ -195,13 +203,9 @@ export function AskAIPage() {
   };
 
   const handleSendMessage = (textToSend?: string, isVoiceInput = false) => {
-    // Stop recognition if active
-    if (recognitionRef.current && isListening) {
-      try {
-        recognitionRef.current.stop();
-        recognitionRef.current.abort();
-      } catch (e) {}
-      setIsListening(false);
+    // Stop recognition if active before sending
+    if (recognitionRef.current || isListening) {
+      stopRecognition();
     }
 
     const text = (textToSend !== undefined ? textToSend : inputVal).trim();
@@ -469,7 +473,7 @@ export function AskAIPage() {
                   {/* Mini Rain Accumulation Sparkline / Bar Chart */}
                   <div className="bg-surface-container-low p-space-md rounded-xl">
                     <div className="flex justify-between items-center mb-space-sm">
-                      <span className="text-label-md text-on-surface-variant">Hourly Rain Accumulation (mm)</span>
+                      <span className="text-label-md text-on-surface-variant">Hourly Rain Accumulation ({preferences?.precip_unit || 'mm'})</span>
                       <span className="text-label-sm font-mono-data text-secondary">Peak: {data.peak}</span>
                     </div>
                     <div className="flex items-end justify-between h-16 pt-2 gap-2">
