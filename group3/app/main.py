@@ -16,7 +16,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import health, analyze, risk, advisory
+from app.api.routes import health, analyze, risk, advisory, chat
 from app.core.config import settings
 
 
@@ -59,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(analyze.router)
     app.include_router(risk.router)
     app.include_router(advisory.router)
+    app.include_router(chat.router)
 
     # ------------------------------------------------------------------ #
     # Global exception handler                                             #

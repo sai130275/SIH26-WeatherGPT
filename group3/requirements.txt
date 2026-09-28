@@ -22,3 +22,6 @@ httpx==0.27.2           # TestClient backend
 
 # Utilities
 python-dotenv==1.0.1    # manual .env loading where needed
+
+# LLM integration (Phase 5)
+openai==1.51.0          # async-capable OpenAI client (AsyncOpenAI)
