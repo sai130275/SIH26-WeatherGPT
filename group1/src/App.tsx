@@ -123,7 +123,7 @@ function App() {
           <AdvisoryPage mode={currentPage.replace('advisory-', '') as any} onNavigate={handleNavigate} />
         )}
         {currentPage === 'ask-ai' && <AskAIPage />}
-        {currentPage === 'alerts' && <AlertsPage />}
+        {currentPage === 'alerts' && <AlertsPage location={location} />}
         {currentPage === 'profile' && (
           <ProfilePage
             onNavigate={handleNavigate}

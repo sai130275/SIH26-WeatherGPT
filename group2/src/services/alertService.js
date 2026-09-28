@@ -34,20 +34,9 @@ const getActiveAlertsForLocation = async (lat, lon, radius = 50) => {
 
     return matchedAlerts;
   } catch (err) {
-    // Return sample prototype alert if DB is offline
-    return [
-      {
-        id: 'proto-alert-1',
-        title: 'Heavy Rain Risk Assessment',
-        description: 'WeatherGPT prototype risk assessment indicates isolated heavy showers possible during evening hours.',
-        level: 'WATCH',
-        sourceType: 'WEATHERGPT_RISK_ASSESSMENT',
-        latitude: lat,
-        longitude: lon,
-        radiusKm: 25,
-        disclaimer: 'Prototype risk assessment. Not an official IMD warning.'
-      }
-    ];
+    // Return empty array when DB is offline as we don't fabricate alerts
+    console.warn('MongoDB connection error, returning empty active alerts:', err.message);
+    return [];
   }
 };
 
