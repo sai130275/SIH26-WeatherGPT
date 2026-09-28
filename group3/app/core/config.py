@@ -22,10 +22,11 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # ------------------------------------------------------------------ #
-    # Server                                                               #
+    # Server & Security                                                    #
     # ------------------------------------------------------------------ #
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+    CORS_ORIGINS: list[str] = ["*"]  # overridden via env var in production
 
     # ------------------------------------------------------------------ #
     # LLM (placeholder – wired in a later phase)                          #
