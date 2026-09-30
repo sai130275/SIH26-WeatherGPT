@@ -11,11 +11,18 @@ Weathergpt/
 ├── README.md               # Master documentation for judges & overview
 ├── LICENSE                 # MIT Open Source License
 ├── .gitignore              # Multi-tier exclusion for secrets, node_modules, and cache
-├── docs/                   # Complete architectural, API, and setup documentation
+├── docs/                   # Complete evaluation & technical documentation
 │   ├── ARCHITECTURE.md     # System architecture, data flow & fallback mechanics
 │   ├── SETUP.md            # Local installation & deployment guide
 │   ├── API.md              # Complete API endpoint specification
 │   ├── DEMO_GUIDE.md       # Step-by-step evaluation guide for judges
+│   ├── DEMO_SCRIPT.md      # Timed 3-5 minute presenter demo script
+│   ├── PROJECT_OVERVIEW.md # Problem, personas, workflow, and technology overview
+│   ├── FEATURES.md         # Factual feature matrix (Current MVP vs Future Expansion)
+│   ├── PROGRESS.md         # Milestone tracker ([x] Current MVP, [~] Partial, [ ] Future)
+│   ├── FUTURE_EXPANSIONS.md# Detailed roadmap across Categories A through E
+│   ├── JUDGE_GUIDE.md      # Judge evaluation hub, testing guide, and demo flow
+│   ├── CHECKLIST.md        # Submission & future architecture readiness checklist
 │   └── PROJECT_STRUCTURE.md# This codebase map
 ├── group1/                 # Group 1: React 18 / Vite / TypeScript Frontend
 ├── group2/                 # Group 2: Node.js / Express API Gateway

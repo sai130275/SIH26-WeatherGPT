@@ -1,30 +1,41 @@
 # WeatherGPT — Group 3: AI & Weather Intelligence
 
-> **Python 3.12+ · FastAPI · Pydantic · NumPy · Pandas**
+> **Python 3.12+ · FastAPI · Pydantic v2 · NumPy · Pandas · Pytest**
 
-This micro-service is the AI and weather intelligence layer of the WeatherGPT platform. It is consumed by the **Group 2** Node.js/Express backend via HTTP.
+This microservice is the AI and mathematical risk intelligence layer of the WeatherGPT platform. It is consumed by the **Group 2** Node.js/Express gateway over HTTP.
 
 ---
 
 ## Architecture Overview
 
-```
+```text
 group3/
 ├── app/
-│   ├── main.py               # FastAPI app factory
+│   ├── main.py               # FastAPI app factory & router registration
 │   ├── api/
 │   │   └── routes/
-│   │       └── health.py     # GET /health
-│   ├── schemas/
-│   │   └── weather.py        # WeatherData + ForecastItem Pydantic models
-│   ├── services/             # Phase 2+: processing, risk, LLM engines
+│   │       ├── health.py     # GET /health
+│   │       ├── chat.py       # POST /chat
+│   │       ├── risk.py       # POST /risk
+│   │       └── advisory.py   # POST /advisory
+│   ├── schemas/              # Pydantic v2 request/response validation schemas
+│   │   ├── weather.py        # WeatherData, Observation, ForecastItem
+│   │   ├── risk.py           # RiskResult, RiskAnalysis
+│   │   ├── chat.py           # ChatRequest, ChatResponse
+│   │   └── advisory.py       # AdvisoryPayload, ImpactAdvisory
+│   ├── services/             # Core algorithmic & generative engines
+│   │   ├── weather_processor.py # Normalizes observations and detects missing fields
+│   │   ├── condition_detector.py# Heuristic feature detection (rain, heat, storm, wind)
+│   │   ├── risk_engine.py    # Multi-hazard mathematical scoring (0-100)
+│   │   ├── impact_engine.py  # Sector impact assessment
+│   │   ├── advisory_engine.py# Actionable advisory generator
+│   │   ├── evidence_engine.py# Context grounding & confidence scoring
+│   │   └── llm_service.py    # Gemini/OpenAI adapter with deterministic fallback
 │   └── core/
-│       └── config.py         # Env-based configuration (pydantic-settings)
-├── tests/
-│   └── test_health.py        # pytest suite
-├── requirements.txt
-├── .env.example
-├── .gitignore
+│       └── config.py         # Pydantic BaseSettings environment loader
+├── tests/                    # 347 automated tests (100% passing)
+├── requirements.txt          # Python dependencies
+├── .python-version           # Pinned Python version (3.12.4)
 └── README.md
 ```
 
@@ -33,146 +44,76 @@ group3/
 ## Quick Start
 
 ### 1. Prerequisites
+* Python 3.12 or higher
+* `pip`
 
-- Python 3.12 or higher
-- `pip` or a virtual-environment tool of your choice
-
-### 2. Create and activate a virtual environment
-
+### 2. Create and Activate Virtual Environment
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate       # macOS / Linux
 # .venv\Scripts\activate        # Windows
 ```
 
-### 3. Install dependencies
-
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure environment
-
+### 4. Configure Environment
 ```bash
 cp .env.example .env
-# Open .env and fill in real values (especially LLM_API_KEY for Phase 2+)
 ```
+*(If `LLM_API_KEY` is omitted, the service automatically runs in deterministic `fallback` mode).*
 
-### 5. Run the development server
-
+### 5. Run the Development Server
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --port 8000 --reload
 ```
 
-The API is now live at **http://localhost:8000**.
-
-| URL | Description |
-|-----|-------------|
-| `http://localhost:8000/health` | Liveness probe |
-| `http://localhost:8000/docs` | Swagger / OpenAPI UI |
-| `http://localhost:8000/redoc` | ReDoc UI |
+Interactive documentation is available at:
+* Swagger UI: `http://localhost:8000/docs`
+* ReDoc: `http://localhost:8000/redoc`
+* Liveness: `http://localhost:8000/health`
 
 ---
 
-## Running Tests
+## Automated Test Suite
 
 ```bash
-pytest tests/ -v
+pytest tests/ -q
 ```
-
-Expected output:
-
-```
-tests/test_health.py::TestHealthEndpoint::test_health_returns_200      PASSED
-tests/test_health.py::TestHealthEndpoint::test_health_returns_json     PASSED
-tests/test_health.py::TestHealthEndpoint::test_health_status_ok        PASSED
-tests/test_health.py::TestHealthEndpoint::test_health_content_type     PASSED
-tests/test_health.py::TestHealthEndpoint::test_health_no_extra_keys    PASSED
-```
+*Expected: **347 passed** in ~8.75s covering risk math, extreme condition detection, weather data normalization, prompt synthesis, and fallback provider behavior.*
 
 ---
 
-## API Reference (Phase 1)
+## API Reference
 
-### `GET /health`
+### 1. `GET /health`
+Liveness probe returning `{"status": "ok"}`.
 
-Liveness probe. Returns `200 OK` when the service process is alive.
-
-**Response**
-
+### 2. `POST /chat`
+Accepts user message, geographic location, and live weather telemetry. Evaluates multi-hazard risk, synthesizes grounded evidence, and returns structured advice:
 ```json
 {
-  "status": "ok"
+  "conversation_id": "conv-123",
+  "answer": "Current overall risk is LOW (score 10). Weather conditions are stable for outdoor activities...",
+  "sources": ["weather", "risk"],
+  "mode": "llm",
+  "intent": "forecast"
 }
 ```
 
----
+### 3. `POST /risk`
+Evaluates multi-hazard heuristic scoring across flood, extreme heat, high wind, and visibility. Returns quantitative scores (0–100) and severity ratings (`LOW`, `MODERATE`, `HIGH`, `SEVERE`).
 
-## Data Schemas
-
-### `WeatherData`
-
-| Field | Type | Unit | Required |
-|---|---|---|---|
-| `location` | `str` | — | ✅ |
-| `latitude` | `float` | degrees (−90 to +90) | ✅ |
-| `longitude` | `float` | degrees (−180 to +180) | ✅ |
-| `timestamp` | `datetime` | UTC ISO-8601 | ✅ |
-| `temperature` | `float` | °C | Optional |
-| `humidity` | `float` | % (0–100) | Optional |
-| `rainfall` | `float` | mm | Optional |
-| `wind_speed` | `float` | km/h | Optional |
-| `wind_direction` | `float` | degrees (0–359) | Optional |
-| `pressure` | `float` | hPa | Optional |
-| `visibility` | `float` | km | Optional |
-| `forecast` | `list[ForecastItem]` | — | Optional |
-
-### `ForecastItem`
-
-| Field | Type | Unit |
-|---|---|---|
-| `timestamp` | `datetime` | UTC ISO-8601 |
-| `temperature` | `float` | °C |
-| `rainfall` | `float` | mm |
-| `humidity` | `float` | % (0–100) |
-| `wind_speed` | `float` | km/h |
-| `weather_condition` | `str` | — |
+### 4. `POST /advisory`
+Delivers domain-specific impacts and protective advisories for agriculture, health, infrastructure, and transport.
 
 ---
 
-## Roadmap
+## Resilient Fallback Engine
 
-| Phase | Feature |
-|---|---|
-| ✅ Phase 1 | Project setup, `/health`, Pydantic schemas |
-| 🔜 Phase 2 | Weather data processing & condition detection |
-| 🔜 Phase 3 | Risk engine & impact engine |
-| 🔜 Phase 4 | Advisory engine |
-| 🔜 Phase 5 | LLM integration & evidence/confidence generation |
-
----
-
-## Integration with Group 2
-
-Group 2 (Node.js/Express) calls this service over HTTP. Base URL is configured in their environment:
-
-```
-WEATHER_AI_SERVICE_URL=http://group3-service:8000
-```
-
-All endpoints follow REST conventions and return JSON.
-
----
-
-## Environment Variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `APP_NAME` | `WeatherGPT – AI & Weather Intelligence (Group 3)` | Service display name |
-| `APP_VERSION` | `0.1.0` | Semver |
-| `DEBUG` | `false` | Enable debug mode |
-| `HOST` | `0.0.0.0` | Bind host |
-| `PORT` | `8000` | Bind port |
-| `LLM_PROVIDER` | `openai` | LLM backend (Phase 2+) |
-| `LLM_API_KEY` | *(required in Phase 2+)* | API key — never commit |
-| `LLM_MODEL` | `gpt-4o` | Model name |
+When `LLM_API_KEY` is not provided, or when external AI endpoints experience timeouts or rate-limiting (HTTP 429/500):
+* The service automatically engages its `FallbackProvider`.
+* Synthesizes deterministic, rule-based safety advisories directly from sensor telemetry and risk engine calculations.
+* Sets `"mode": "fallback"` for complete transparency without crashing or hallucinating.

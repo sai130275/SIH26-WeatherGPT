@@ -287,6 +287,8 @@ export function AskAIPage() {
         }
       } catch (err: unknown) {
         const axiosErr = err as AxiosError<ApiBaseResponse<null>>;
+        // Unmask structured gateway error message if present (e.g. rate limits or upstream timeouts)
+        // instead of defaulting immediately to a generic network error.
         const errorResponse: ChatItem = {
           id: `error-${Date.now()}`,
           role: 'assistant',

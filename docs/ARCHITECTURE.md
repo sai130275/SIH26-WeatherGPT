@@ -1,47 +1,104 @@
 # WeatherGPT System Architecture
 
-This document describes the high-level architecture, service boundaries, data pipelines, failure resilience mechanisms, and communication protocols across the WeatherGPT platform.
+This document describes the high-level architecture, service boundaries, data pipelines, failure resilience mechanisms, and communication protocols across the WeatherGPT platform. It details both the **CURRENT ARCHITECTURE** running today and the **FUTURE ARCHITECTURE CONCEPT** planned for platform expansion.
 
 ---
 
-## 1. High-Level System Architecture
+## 1. Current Architecture (Operational MVP)
+
+The current working architecture is an asynchronous 3-tier microservice system designed for resilience, strict type safety, and deterministic fallbacks.
 
 ```text
-                    ┌───────────────────────────────────┐
-                    │              Group 1              │
-                    │   React 18 + Vite Frontend UI     │
-                    │   Tailwind CSS · Context API      │
-                    └─────────────────┬─────────────────┘
-                                      │
-                                      │ HTTP REST (JSON)
-                                      │ Socket.IO (Realtime alerts)
-                                      ▼
-                    ┌───────────────────────────────────┐
-                    │              Group 2              │
-                    │   Node.js / Express API Gateway   │
-                    │   Auth · Cache · Provider Adapter │
-                    └─────────┬───────────────┬─────────┘
-                              │               │
-                 Weather Data │               │ Orchestrated Payload
-                 (Open-Meteo) │               │ (/chat, /risk, /advisory)
-                              ▼               ▼
-                 ┌──────────────────┐  ┌───────────────────────────────────┐
-                 │    Open-Meteo    │  │              Group 3              │
-                 │   Public API     │  │    FastAPI AI & Intelligence      │
-                 │ (NWP GFS/ECMWF)  │  │    Pydantic · Risk Engine · RAG   │
-                 └──────────────────┘  └─────────────────┬─────────────────┘
-                                                         │
-                                                         │ LLM Prompt / Grounding
-                                                         ▼
-                                                ┌──────────────────┐
-                                                │  Google Gemini / │
-                                                │      OpenAI      │
-                                                └──────────────────┘
+                     ┌───────────────────────────────────┐
+                     │              Group 1              │
+                     │    React 18 + Vite Frontend UI    │
+                     │    Tailwind CSS · Context API     │
+                     └─────────────────┬─────────────────┘
+                                       │
+                                       │ HTTP REST (JSON)
+                                       │ Web Speech API (Voice-to-Text)
+                                       ▼
+                     ┌───────────────────────────────────┐
+                     │              Group 2              │
+                     │   Node.js / Express API Gateway   │
+                     │   Auth · Cache · Provider Adapter │
+                     └─────────┬───────────────┬─────────┘
+                               │               │
+                  Weather Data │               │ Orchestrated Payload
+                  (Open-Meteo) │               │ (/chat, /risk, /advisory)
+                               ▼               ▼
+                  ┌──────────────────┐  ┌───────────────────────────────────┐
+                  │    Open-Meteo    │  │              Group 3              │
+                  │   Public API     │  │    FastAPI AI & Intelligence      │
+                  │ (NWP GFS/ECMWF)  │  │    Pydantic · Risk Engine · RAG   │
+                  └──────────────────┘  └─────────────────┬─────────────────┘
+                                                          │
+                                                          │ LLM Prompt / Grounding
+                                                          ▼
+                                                 ┌──────────────────┐
+                                                 │  Google Gemini / │
+                                                 │   OpenAI / Rule  │
+                                                 │ Fallback Engine  │
+                                                 └──────────────────┘
+```
+
+### Simplified Current Pipeline
+```text
+React (Group 1)
+  ↓
+Node.js / Express Orchestrator (Group 2)
+  ↓
+FastAPI Intelligence Service (Group 3)
+  ↓
+Weather / Data Sources (Open-Meteo) + AI (Gemini / OpenAI / Deterministic Fallback)
 ```
 
 ---
 
-## 2. Microservice Boundaries & Responsibilities
+## 2. Future Architecture Concept (Planned Platform Evolution)
+
+> ### ⚠️ FUTURE ARCHITECTURE — NOT CURRENTLY IMPLEMENTED
+> The diagram below represents the long-term architectural blueprint matching the full Smart India Hackathon scope. It expands the current 3-tier core with multi-channel ingress (including Toll-Free voice and SMS), vector-based Advanced RAG, multi-source environmental data ingestion, and scalable cloud infrastructure.
+
+```text
+    ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐   ┌─────────────────────┐
+    │  Web / PWA   │   │ Mobile Apps  │   │ Toll-Free Voice  │   │ SMS / Notifications │
+    │ (React/PWA)  │   │(Android/iOS) │   │ (Telephony / IVR)│   │  (CAP / Broadcast)  │
+    └──────┬───────┘   └──────┬───────┘   └────────┬─────────┘   └──────────┬──────────┘
+           │                  │                    │                        │
+           └──────────────────┼────────────────────┴────────────────────────┘
+                              │
+                              ▼
+        ┌────────────────────────────────────────────────────────┐
+        │               API / Orchestration Layer                │
+        │      (API Gateway · Ingress · Rate Limiting · Auth)     │
+        │        (Regional Edge Caching · Telephony Webhook)     │
+        └──────────────────────────┬─────────────────────────────┘
+                                   │
+                                   ▼
+        ┌────────────────────────────────────────────────────────┐
+        │                   AI + Advanced RAG                    │
+        │       (FastAPI · Multi-Hazard Mathematical Risk Engine) │
+        │ (Vector DB: ICAR Bulletins, Flood SOPs, Relief Manuals)│
+        │    (LLM / SLM Ensemble · Local Deterministic Fallback) │
+        └──────────────────────────┬─────────────────────────────┘
+                                   │
+                                   ▼
+        ┌────────────────────────────────────────────────────────┐
+        │  Weather / Satellite / Government / GIS / IoT Sources  │
+        │                                                        │
+        │  • NWP Models: Open-Meteo, ECMWF, GFS, IMD AWS Radar   │
+        │  • Earth Observation: ISRO INSAT-3D Satellite Feeds    │
+        │  • Government Systems: NDMA / SDMA CAP Alert Feeds     │
+        │  • Spatial GIS: Leaflet / MapLibre Hazard Vector Layers│
+        │  • Hyperlocal IoT: Automated Weather Stations & Probes │
+        │  • Community Reports: Verified Ground-Truth Feed       │
+        └────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3. Microservice Boundaries & Responsibilities (Current MVP)
 
 | Service | Primary Stack | Core Responsibilities |
 | :--- | :--- | :--- |
@@ -51,12 +108,12 @@ This document describes the high-level architecture, service boundaries, data pi
 
 ---
 
-## 3. End-to-End Request & Data Flow
+## 4. End-to-End Request & Data Flow
 
 ### A. Ask AI Pipeline (`POST /api/chat`)
 
 1. **User Input (Group 1)**:
-   - The user enters a question (e.g., *"Can I spray pesticides in Warangal tomorrow morning?"*) or uses the Web Speech API voice input.
+   - The user enters a question (e.g., *"Can I spray pesticides in Warangal tomorrow morning?"*) or uses Web Speech API voice input.
    - Group 1 sends `POST /api/chat` to Group 2 with the payload:
      ```json
      {
@@ -103,12 +160,12 @@ This document describes the high-level architecture, service boundaries, data pi
 1. Group 1 requests current conditions (`/api/weather/current?lat=...&lon=...`) and 7-day outlook (`/api/weather/forecast?lat=...&lon=...&days=7`).
 2. Group 2 checks Redis for a cached key (`weather:current:<lat>:<lon>`).
    - **Cache Hit**: Serves directly within < 5 ms.
-   - **Cache Miss**: Calls Open-Meteo NWP APIs, normalizes hourly and daily matrices, stores in cache with a 5-minute TTL, and returns to Group 1.
+   - **Cache Miss**: Calls Open-Meteo NWP APIs, normalizes hourly and daily matrices, stores in cache with a 15-minute TTL, and returns to Group 1.
 3. Group 1 receives raw metric values (metric system standard) and dynamically runs them through `PreferencesContext` (`formatTemp`, `formatWind`, `formatPrecip`, `formatPressure`) according to user configuration.
 
 ---
 
-## 4. Failure Modes & Graceful Fallbacks
+## 5. Failure Modes & Graceful Fallbacks
 
 | Failure Scenario | Resilient Architecture Behavior | User Impact |
 | :--- | :--- | :--- |
@@ -121,7 +178,7 @@ This document describes the high-level architecture, service boundaries, data pi
 
 ---
 
-## 5. Security & Reverse Proxy Architecture
+## 6. Security & Reverse Proxy Architecture
 
 - **CORS Handling**: Group 2 validates the incoming `Origin` against `ALLOWED_ORIGINS`, stripping trailing slashes and supporting comma-separated whitelists as well as wildcard development mode.
 - **Trust Proxy**: Group 2 explicitly configures `app.set('trust proxy', 1)` to correctly inspect client IPs behind Cloudflare and Render reverse proxies for accurate rate-limiting.

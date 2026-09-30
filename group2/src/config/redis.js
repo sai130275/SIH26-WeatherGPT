@@ -1,5 +1,7 @@
 const Redis = require('ioredis');
 
+// Distributed cache abstraction with transparent fallback to an in-memory Map with TTL
+// when a Redis server is not deployed or unreachable.
 let redisClient = null;
 const memoryCache = new Map();
 

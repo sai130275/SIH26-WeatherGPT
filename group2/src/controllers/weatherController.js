@@ -6,6 +6,8 @@ const getCurrentWeather = async (req, res, next) => {
   try {
     const lat = parseFloat(req.query.lat) || 17.9689;
     const lon = parseFloat(req.query.lon) || 79.5941;
+    // Round coordinates to 3 decimal places (~110m resolution) to maximize cache hit ratio
+    // across neighboring mobile users while preserving hyperlocal precision.
     const cacheKey = `weather:${lat.toFixed(3)}:${lon.toFixed(3)}`;
 
     const cachedData = await getCache(cacheKey);
@@ -14,7 +16,9 @@ const getCurrentWeather = async (req, res, next) => {
     }
 
     const weatherData = await weatherProvider.getCurrentWeather(lat, lon);
-    await setCache(cacheKey, weatherData, 900); // 15 min TTL
+    // 15-minute TTL matches the typical update cadence of NWP assimilation cycles
+    // while shielding the Open-Meteo upstream service from redundant traffic spikes.
+    await setCache(cacheKey, weatherData, 900);
 
     return sendSuccess(res, weatherData, 'Current weather fetched');
   } catch (err) {

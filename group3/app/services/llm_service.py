@@ -493,7 +493,9 @@ class LLMService:
                 "LLM provider failed (%s). Switching to fallback for this request.",
                 exc,
             )
-            # Per-request fallback — do not permanently switch mode
+            # Per-request fallback guarantees that a single transient network timeout or rate-limit
+            # does not permanently downgrade the server instance for subsequent queries,
+            # while ensuring the current user still receives an immediate rule-based advisory.
             fallback = FallbackProvider()
             answer = await fallback.generate(user_message, context_block, history)
             return answer, sources, "fallback"

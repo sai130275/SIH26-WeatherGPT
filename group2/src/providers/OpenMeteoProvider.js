@@ -25,7 +25,9 @@ class OpenMeteoProvider extends WeatherProvider {
       const current = response.data.current_weather || {};
       const hourly = response.data.hourly || {};
 
-      // Find the hourly index matching the current time instead of always using 0 (midnight)
+      // Open-Meteo separates basic instantaneous telemetry (current_weather) from extended
+      // atmospheric parameters (hourly CAPE, surface pressure, visibility, UV index).
+      // We align the current time string with the hourly index to extract matching concurrent values.
       let currentIndex = 0;
       if (hourly.time && hourly.time.length > 0 && current.time) {
         const currentTimeStr = current.time; // e.g. "2026-09-28T14:00"

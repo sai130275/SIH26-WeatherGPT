@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+// Connects to MongoDB with a short 500ms discovery timeout to prevent startup stalls;
+// gracefully activates an in-memory mock store if MongoDB is offline.
 const connectDB = async () => {
   try {
     const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/weathergpt';

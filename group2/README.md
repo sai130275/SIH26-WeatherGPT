@@ -1,37 +1,36 @@
-# WeatherGPT Backend (Smart India Hackathon 2026)
+# WeatherGPT — Group 2: API Gateway & Orchestrator
 
-WeatherGPT is a decision-support backend built around the core concept:
-**Weather → Context → Risk → Decision → Action**
+> **Smart India Hackathon 2026** · *Node.js 18+ · Express · Socket.IO · Axios*
 
-It combines an Express.js orchestration server, a Python FastAPI deterministic risk engine, Open-Meteo forecast providers, and generative LLM providers (Gemini / OpenAI / Mock).
+Group 2 is the central API Gateway and orchestration perimeter for the WeatherGPT platform. It receives HTTP requests from the React frontend (Group 1), manages authentication, caches weather data, enriches user queries with live NWP observations from Open-Meteo, and forwards structured intelligence payloads to the Python AI service (Group 3).
 
 ---
 
 ## Architecture Overview
 
-```
-Flutter Mobile App (Dart)
-       │
-       ▼  HTTP / REST & WebSockets
+```text
+[Group 1: React 18 Frontend] (Port 5173)
+              │
+              │ HTTP REST / Web Speech Voice
+              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                 Main Express.js Orchestrator                │
-│                        (Port 5000)                          │
+│                 Group 2 Express API Gateway                 │
+│                        (Port 5001)                          │
+│   Rate Limiting · Helmet · JWT Auth · Open-Meteo Adapter    │
 └──────┬────────────────────┬────────────────────┬────────────┘
        │                    │                    │
        ▼                    ▼                    ▼
  ┌───────────┐        ┌───────────┐    ┌──────────────────┐
  │  MongoDB  │        │   Redis   │    │ Weather Provider │
- │ (Port 27017)       │ (Port 6379)    │   (Open-Meteo)   │
+ │(In-Memory │        │(In-Memory │    │   (Open-Meteo)   │
+ │ Fallback) │        │ Fallback) │    │  IMD/ECMWF/GFS   │
  └───────────┘        └───────────┘    └──────────────────┘
        │
-       ▼
+       ▼ (Forward Enriched Query + Telemetry)
  ┌───────────────────────────────────────────────────────────┐
- │               Python FastAPI Risk Engine                  │
- │                       (Port 8000)                         │
- └────────────────────────────┬──────────────────────────────┘
-                              │
-                              ▼
-                       Flutter Frontend
+ │        Group 3 Python FastAPI AI & Risk Engine            │
+ │                        (Port 8000)                        │
+ └───────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -40,93 +39,57 @@ Flutter Mobile App (Dart)
 
 ### 1. Install Node.js Dependencies
 ```bash
-cd backend
-cmd /c npm install
+npm install
 ```
 
-### 2. Start Node.js Orchestrator
+### 2. Configure Environment Variables
 ```bash
-cmd /c npm run dev
+cp .env.example .env
+```
+Default port is `5001` (to prevent conflicts with macOS AirPlay receiver).
+
+### 3. Start Development Server
+```bash
+npm run dev
 ```
 
-### 3. Start Python FastAPI Risk Engine
-```bash
-cd risk-engine
-pip install -r requirements.txt
-python main.py
-```
-
-### 4. Docker Compose (Full Stack)
-```bash
-docker-compose up --build
-```
+The gateway is now live at `http://localhost:5001`.
+* Health check: `GET http://localhost:5001/api/health`
 
 ---
 
-## Flutter Integration Guide & API Endpoints
+## Key Endpoints
 
-### 1. WeatherGPT Chat Endpoint
-* **Method**: `POST`
-* **Endpoint**: `/api/chat`
-* **Request Body**:
-```json
-{
-  "message": "I have to travel tomorrow from 7 AM to 11 AM. What time is better?",
-  "latitude": 17.9689,
-  "longitude": 79.5941,
-  "language": "en"
-}
-```
-* **Sample Flutter (Dart) HTTP Request**:
-```dart
-import 'dart:convert';
-import 'http/http.dart' as http;
+### 1. Conversational AI (`POST /api/chat`)
+* Receives user message and geographic coordinates.
+* Enriches the query with real-time Open-Meteo telemetry.
+* Proxies the request to Group 3's `/chat` endpoint.
 
-Future<Map<String, dynamic>> sendWeatherGptQuery(String message, double lat, double lon, String lang) async {
-  final url = Uri.parse('http://10.0.2.2:5000/api/chat');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'message': message,
-      'latitude': lat,
-      'longitude': lon,
-      'language': lang,
-    }),
-  );
-  return jsonDecode(response.body);
-}
-```
-
----
-
-### 2. Authentication Endpoints
-* `POST /api/auth/register` (Name, email, password, language)
-* `POST /api/auth/login` (Email, password) -> returns JWT token
-* `GET /api/auth/me` -> Headers: `Authorization: Bearer <token>`
-
----
-
-### 3. Weather Endpoints
+### 2. Weather Ingestion
 * `GET /api/weather/current?lat=17.9689&lon=79.5941`
 * `GET /api/weather/forecast?lat=17.9689&lon=79.5941&days=7`
-* `GET /api/weather/history?lat=17.9689&lon=79.5941&start_date=2026-09-01&end_date=2026-09-25`
+* Cached via Redis with automated in-memory Map fallback.
 
----
+### 3. Authentication & User Profiles
+* `POST /api/auth/register` (Name, email, password, language)
+* `POST /api/auth/login` (Email, password) -> returns signed JWT
 
-### 4. GeoJSON Risk Map (Mapbox Integration)
-* `GET /api/risk/map?lat=17.9689&lon=79.5941`
-* Returns GeoJSON `FeatureCollection` ready for direct loading into Mapbox Flutter vector layers.
-
----
-
-### 5. Geofenced Alerts Endpoint
+### 4. Active Alerts
 * `GET /api/alerts?lat=17.9689&lon=79.5941&radius=50`
-* `POST /api/alerts/check`
+* Geofenced radius filtering and severity categorization.
 
 ---
 
-## Disclaimers & Safety Rules
+## Testing
 
-> [!IMPORTANT]
-> WeatherGPT risk scores are deterministic prototype assessments designed for decision support. They are **never** described as 100% "safe" (using *"lower weather-risk profile"*) and are strictly separated from official IMD warnings.
+```bash
+npm test
+```
+*Expected: 15 integration tests passing covering auth, weather normalization, alert queries, and Group 3 proxying.*
+
+---
+
+## Resilient Architecture & Fallbacks
+
+* **MongoDB In-Memory Fallback**: If MongoDB is not reachable, `src/config/db.js` automatically activates an in-memory data store.
+* **Redis In-Memory Fallback**: If Redis is not reachable, `src/config/redis.js` automatically activates an internal Map cache with TTL expiration.

@@ -15,6 +15,8 @@ const handleChat = async (req, res, next) => {
     const lon = parseFloat(longitude) || 79.5941;
 
     // STEP 1: Weather Data Retrieval
+    // Pre-fetching telemetry at the gateway decouples the AI intelligence service
+    // from external meteorological network calls and ensures canonical data grounding.
     const currentWeather = await weatherProvider.getCurrentWeather(lat, lon);
 
     const weatherData = {
@@ -31,6 +33,8 @@ const handleChat = async (req, res, next) => {
     };
 
     // STEP 2: Call Group 3 /chat
+    // Forward structured payload to Group 3. A 60-second timeout accommodates
+    // initial cold-start wakeups on free cloud tiers and LLM inference generation.
     const payload = {
       message,
       location: { latitude: lat, longitude: lon },
@@ -39,7 +43,7 @@ const handleChat = async (req, res, next) => {
     };
 
     const response = await axios.post(`${GROUP3_URL}/chat`, payload, {
-      timeout: 60000 // LLM calls might take some time
+      timeout: 60000
     });
 
     // STEP 3: Return Structured Response

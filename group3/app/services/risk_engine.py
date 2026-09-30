@@ -129,7 +129,8 @@ class RiskEngine:
             pressure=data.pressure,
         )
         results.append(_build_result("flood", flood_score, flood_reasons))
-        # Include flood in overall only when we have at least rainfall
+        # Only include flood in overall score when rainfall data is explicitly observed;
+        # otherwise, indirect humidity/pressure indicators would artificially bias overall hazard score.
         if data.rainfall is not None:
             hazard_scores.append(flood_score)
 
