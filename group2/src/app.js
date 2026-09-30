@@ -22,15 +22,40 @@ const healthRoutes = require('./routes/healthRoutes');
 const app = express();
 const server = http.createServer(app);
 
-// Allowed origins (restrict in production)
-const allowedOrigins = env.NODE_ENV === 'production'
-  ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
-  : ['*'];
+// Allowed origins (handles wildcards, whitespace, trailing slashes, and fallback)
+const getCorsOrigin = () => {
+  const raw = process.env.ALLOWED_ORIGINS;
+  if (!raw || raw.trim() === '' || raw.trim() === '*') {
+    return '*';
+  }
+  const origins = raw
+    .split(',')
+    .map(o => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
+  if (origins.includes('*')) {
+    return '*';
+  }
+
+  return (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const cleanOrigin = origin.trim().replace(/\/+$/, '');
+    if (origins.includes(cleanOrigin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  };
+};
+
+const corsOriginSetting = getCorsOrigin();
+
+// Enable trust proxy for Render / Cloudflare reverse proxies
+app.set('trust proxy', 1);
 
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: env.NODE_ENV === 'production' ? allowedOrigins : '*',
+    origin: corsOriginSetting,
     methods: ['GET', 'POST']
   }
 });
@@ -60,7 +85,7 @@ app.set('io', io);
 // Security & Middleware
 app.use(helmet());
 app.use(cors({
-  origin: env.NODE_ENV === 'production' ? allowedOrigins : '*'
+  origin: corsOriginSetting
 }));
 app.use(express.json({ limit: '10kb' }));
 

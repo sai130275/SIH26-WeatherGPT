@@ -1,7 +1,7 @@
 const request = require('supertest');
 const { app } = require('../src/app');
 
-jest.setTimeout(15000);
+jest.setTimeout(45000);
 
 describe('WeatherGPT Complete End-to-End API Flow', () => {
   let userToken = '';

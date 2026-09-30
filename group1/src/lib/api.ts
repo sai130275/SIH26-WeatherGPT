@@ -1,10 +1,22 @@
 import axios, { AxiosError } from 'axios';
 import type { ApiBaseResponse } from '../types/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+// Resolves API gateway base URL from either VITE_API_BASE_URL or VITE_API_URL
+// and guarantees trailing /api suffix for client route consistency.
+const getApiBaseUrl = (): string => {
+  const envUrl = (
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_API_URL ||
+    'http://localhost:5001/api'
+  ).trim();
+  const withoutTrailingSlash = envUrl.replace(/\/+$/, '');
+  return withoutTrailingSlash.endsWith('/api')
+    ? withoutTrailingSlash
+    : `${withoutTrailingSlash}/api`;
+};
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   timeout: 60000,
 });
 

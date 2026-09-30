@@ -290,7 +290,10 @@ export function AskAIPage() {
         const errorResponse: ChatItem = {
           id: `error-${Date.now()}`,
           role: 'assistant',
-          content: axiosErr.response?.data?.message || 'Network error: Failed to connect to the intelligence gateway.',
+          content:
+            axiosErr.response?.data?.error?.message ||
+            axiosErr.response?.data?.message ||
+            'Network error: Failed to connect to the intelligence gateway.',
           isError: true,
         };
         setMessages((prev) => prev.map((msg) => (msg.id === loadingId ? errorResponse : msg)));
