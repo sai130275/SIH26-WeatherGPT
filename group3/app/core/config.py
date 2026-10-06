@@ -55,6 +55,18 @@ class Settings(BaseSettings):
     LOW_VISIBILITY_THRESHOLD_KM: float = 1.0
 
     # ------------------------------------------------------------------ #
+    # Weather Provider Configuration                                      #
+    # ------------------------------------------------------------------ #
+    OPEN_METEO_BASE_URL: str = "https://api.open-meteo.com/v1"
+    OPEN_METEO_ARCHIVE_URL: str = "https://archive-api.open-meteo.com/v1/archive"
+    OPEN_METEO_TIMEOUT_SECONDS: int = 8
+
+    # Weather Cache TTLs (seconds)
+    WEATHER_CACHE_TTL_CURRENT: int = 900       # 15 minutes
+    WEATHER_CACHE_TTL_FORECAST: int = 1800     # 30 minutes
+    WEATHER_CACHE_TTL_HISTORICAL: int = 86400  # 24 hours
+
+    # ------------------------------------------------------------------ #
     # Pydantic-settings: load from .env, ignore extra keys                #
     # ------------------------------------------------------------------ #
     model_config = SettingsConfigDict(
