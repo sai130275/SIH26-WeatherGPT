@@ -72,12 +72,18 @@ class WeatherProvider(ABC):
         self._last_error: Optional[str] = None
 
     @abstractmethod
-    async def get_current(self, lat: float, lon: float) -> CurrentWeather:
+    async def get_current(
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+    ) -> CurrentWeather:
         """
         Fetch and normalize current weather for the given coordinates.
 
         :param lat: Latitude in decimal degrees (-90 to +90).
         :param lon: Longitude in decimal degrees (-180 to +180).
+        :param location_name: Optional human-readable place name.
         :return: CurrentWeather object in canonical schema.
         :raises ProviderUnavailableError: If provider API is unreachable or fails.
         """
@@ -89,6 +95,7 @@ class WeatherProvider(ABC):
         lat: float,
         lon: float,
         days: int = 7,
+        location_name: Optional[str] = None,
     ) -> ForecastWeather:
         """
         Fetch and normalize weather forecast for the given coordinates.
@@ -96,6 +103,7 @@ class WeatherProvider(ABC):
         :param lat: Latitude in decimal degrees.
         :param lon: Longitude in decimal degrees.
         :param days: Number of forecast days (1 to 16).
+        :param location_name: Optional human-readable place name.
         :return: ForecastWeather object with hourly and daily forecasts.
         :raises ProviderUnavailableError: If provider API is unreachable or fails.
         """
@@ -108,6 +116,7 @@ class WeatherProvider(ABC):
         lon: float,
         start_date: str,
         end_date: str,
+        location_name: Optional[str] = None,
     ) -> HistoricalWeather:
         """
         Fetch and normalize historical weather data for the given date range.
@@ -116,10 +125,12 @@ class WeatherProvider(ABC):
         :param lon: Longitude in decimal degrees.
         :param start_date: ISO date string 'YYYY-MM-DD'.
         :param end_date: ISO date string 'YYYY-MM-DD'.
+        :param location_name: Optional human-readable place name.
         :return: HistoricalWeather object.
         :raises ProviderUnavailableError: If provider API is unreachable or fails.
         """
         pass
+
 
     async def health_check(self) -> bool:
         """

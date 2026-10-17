@@ -16,11 +16,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from app.core.config import settings
-from app.providers.base import (
-    ProviderUnavailableError,
-    WeatherProvider,
-    WeatherProviderError,
-)
+from app.providers.base import ProviderUnavailableError
 from app.providers.registry import ProviderRegistry, default_registry
 from app.schemas.unified_weather import (
     CurrentWeather,
@@ -104,6 +100,39 @@ class WeatherAggregator:
         raise ProviderUnavailableError(
             f"All current weather providers failed: {'; '.join(errors)}"
         )
+
+    async def get_all_current(
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+    ) -> List[CurrentWeather]:
+        """
+        Fetch current weather from all available registered providers in parallel/sequence
+        to support multi-provider data comparison and fusion.
+        """
+        providers = self.registry.get_providers_for_feature("current")
+        if not providers:
+            raise ProviderUnavailableError("No providers configured for current weather")
+
+        results: List[CurrentWeather] = []
+        errors: List[str] = []
+
+        for provider in providers:
+            try:
+                data = await provider.get_current(lat, lon, location_name=location_name)
+                results.append(data)
+            except Exception as exc:
+                err_msg = f"{provider.name}: {exc}"
+                logger.warning("Provider failed during get_all_current: %s", err_msg)
+                errors.append(err_msg)
+
+        if not results:
+            raise ProviderUnavailableError(
+                f"All current weather providers failed: {'; '.join(errors)}"
+            )
+
+        return results
 
     async def get_forecast(
         self,

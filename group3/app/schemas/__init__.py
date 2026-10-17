@@ -13,6 +13,19 @@ from app.schemas.unified_weather import (
     ProviderInfo,
     WeatherResponse,
 )
+from app.schemas.intelligence import (
+    CurrentAnalysis,
+    ForecastIntelligence,
+    MetricTrend,
+    WeatherTrends,
+    DetectedExtremeEvent,
+    HazardRisk,
+    RiskAssessment,
+    DataQualityReport,
+    ConfidenceAssessment,
+    WeatherIntelligenceResponse,
+    WeatherIntelligenceRequest,
+)
 
 __all__ = [
     "ProviderInfo",
@@ -22,4 +35,15 @@ __all__ = [
     "ForecastWeather",
     "HistoricalWeather",
     "WeatherResponse",
+    "CurrentAnalysis",
+    "ForecastIntelligence",
+    "MetricTrend",
+    "WeatherTrends",
+    "DetectedExtremeEvent",
+    "HazardRisk",
+    "RiskAssessment",
+    "DataQualityReport",
+    "ConfidenceAssessment",
+    "WeatherIntelligenceResponse",
+    "WeatherIntelligenceRequest",
 ]

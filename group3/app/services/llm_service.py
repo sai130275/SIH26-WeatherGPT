@@ -258,7 +258,7 @@ class OpenAIProvider(LLMProvider):
     """
 
     def __init__(self, api_key: str, model: str) -> None:
-        if not OPENAI_AVAILABLE:
+        if not OPENAI_AVAILABLE or _openai is None:
             raise RuntimeError(
                 "openai package is not installed. "
                 "Run: pip install 'openai>=1.0.0'"
@@ -276,7 +276,7 @@ class OpenAIProvider(LLMProvider):
             context_block=context_block
         )
 
-        messages: list[dict] = [{"role": "system", "content": system_prompt}]
+        messages: list[Any] = [{"role": "system", "content": system_prompt}]
 
         # Append recent conversation history (up to last 6 turns)
         for msg in history[-6:]:

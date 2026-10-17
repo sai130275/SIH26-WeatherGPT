@@ -20,6 +20,10 @@ from app.providers.base import (
     ProviderRateLimitError,
     ProviderUnavailableError,
 )
+from app.schemas.intelligence import (
+    WeatherIntelligenceRequest,
+    WeatherIntelligenceResponse,
+)
 from app.schemas.unified_weather import (
     CurrentWeather,
     ForecastWeather,
@@ -27,6 +31,10 @@ from app.schemas.unified_weather import (
     WeatherResponse,
 )
 from app.services.weather_aggregator import WeatherAggregator, default_aggregator
+from app.services.weather_intelligence import (
+    WeatherIntelligenceService,
+    default_intelligence_service,
+)
 
 router = APIRouter(prefix="/weather", tags=["Weather"])
 
@@ -172,3 +180,88 @@ async def get_historical_weather(
 )
 async def get_provider_status() -> List[Dict[str, Any]]:
     return await default_aggregator.get_provider_status()
+
+
+@router.get(
+    "/intelligence",
+    response_model=WeatherIntelligenceResponse,
+    summary="Get complete weather intelligence",
+    description=(
+        "Retrieves multi-provider weather observations and forecast, runs deterministic meteorological analysis, "
+        "trends, extreme weather detection, risk assessment, data quality evaluation, and explainable confidence scoring."
+    ),
+)
+async def get_weather_intelligence(
+    lat: float = Query(..., ge=-90.0, le=90.0, description="Latitude in decimal degrees"),
+    lon: float = Query(..., ge=-180.0, le=180.0, description="Longitude in decimal degrees"),
+    days: int = Query(7, ge=1, le=16, description="Forecast horizon in days"),
+    location: Optional[str] = Query(None, description="Location name label"),
+    force_refresh: bool = Query(False, description="Bypass cache and force new provider fetch"),
+) -> WeatherIntelligenceResponse:
+    try:
+        # Fetch current observations from available providers
+        try:
+            current_list = await default_aggregator.get_all_current(
+                lat=lat, lon=lon, location_name=location
+            )
+        except Exception:
+            # Fall back to single get_current
+            single_current = await default_aggregator.get_current(
+                lat=lat, lon=lon, location_name=location, force_refresh=force_refresh
+            )
+            current_list = [single_current]
+
+        # Fetch forecast
+        forecast: Optional[ForecastWeather] = None
+        try:
+            forecast = await default_aggregator.get_forecast(
+                lat=lat, lon=lon, days=days, location_name=location, force_refresh=force_refresh
+            )
+        except Exception as exc:
+            # Forecast is optional for current intelligence
+            pass
+
+        return default_intelligence_service.generate_intelligence(
+            current_observations=current_list,
+            forecast=forecast,
+            forecast_days=days,
+        )
+    except ProviderRateLimitError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+        ) from exc
+    except ProviderUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate weather intelligence: {exc}",
+        ) from exc
+
+
+@router.post(
+    "/intelligence/analyze",
+    response_model=WeatherIntelligenceResponse,
+    summary="Analyze caller-supplied weather observations",
+    description=(
+        "Runs deterministic meteorological analysis, trends, hazard detection, and risk scoring "
+        "on caller-supplied CurrentWeather and optional ForecastWeather data."
+    ),
+)
+async def analyze_weather_intelligence(
+    request: WeatherIntelligenceRequest,
+) -> WeatherIntelligenceResponse:
+    try:
+        return default_intelligence_service.generate_intelligence(
+            current_observations=request.current,
+            forecast=request.forecast,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze weather intelligence: {exc}",
+        ) from exc

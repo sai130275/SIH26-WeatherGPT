@@ -114,6 +114,7 @@ CURRENT_WEATHER_OPTIONAL_FIELDS: tuple[str, ...] = (
     "temperature",
     "humidity",
     "rainfall",
+    "rainfall_24h",
     "wind_speed",
     "wind_direction",
     "wind_gusts",
@@ -203,7 +204,12 @@ class CurrentWeather(BaseModel):
     )
     rainfall: Optional[float] = Field(
         default=None, ge=0,
-        description="Precipitation in mm. Must be ≥ 0.", examples=[12.4],
+        description="Instantaneous / hourly precipitation in mm. Must be ≥ 0.", examples=[12.4],
+    )
+    rainfall_24h: Optional[float] = Field(
+        default=None, ge=0,
+        description="Accumulated 24-hour precipitation in mm. Must be ≥ 0. Used for IMD daily rainfall classifications.",
+        examples=[45.0],
     )
     wind_speed: Optional[float] = Field(
         default=None, ge=0,
